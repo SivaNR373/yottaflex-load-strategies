@@ -9,7 +9,7 @@ Python + DuckDB + pytest. I'm strong in Python and SQL, and DuckDB runs locally 
 **My work:** I created the GitHub repo, virtual environment, folders and .gitignore myself, and checked the structure.
 
 ## Phase 1: Docs
-**My work:** I decided the tables, keys and validation rules, and wrote the data dictionary, flow notes and assumptions.
+**My work:** Created the data dictionary, architecture flow and project assumptions. Used AI to review the documentation and suggest improvements.
 
 **Claude prompts:**
 - "phase 1"

@@ -2,7 +2,17 @@
 
 Compares full refresh, incremental merge, and partition replacement on a small orders dataset, and checks that all three give the same result.
 
-(Setup, run steps and results will be added as I build.)
+## Architecture
+
+CSV files → Data Generator → Validation → Data Loading → Reconciliation
+
+The project compares three loading strategies:
+
+- **Full Refresh:** Reload all available data.
+- **Incremental Merge:** Load new records and update existing records when newer data arrives.
+- **Partition Replacement:** Reload only the affected order dates.
+
+Finally, the results of all three strategies are compared to check whether they produce the same data.
 
 ## Assumptions
 - Data is synthetic and created by my generator with a fixed seed

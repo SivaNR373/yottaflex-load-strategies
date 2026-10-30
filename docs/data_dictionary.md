@@ -60,3 +60,18 @@ Columns: run_id, strategy, start_time, end_time, input_count, output_count, reje
 5. customer_id must exist in dim_customers (otherwise reject)
 6. Duplicate order_id in one batch: keep the latest updated_at (tie: last row)
 7. A stored order is replaced only by a row with a newer updated_at
+
+## Target table keys and data types
+
+- dim_customers: customer_id is the primary key.
+- fact_orders: order_id is the primary key; customer_id references dim_customers.
+- order_status_history: order_id and updated_at form the composite key.
+- run_log: run_id is the primary key.
+- rejects stores invalid records with their source file and reason.
+
+IDs use text (VARCHAR), amount uses DECIMAL, dates use DATE and timestamps use TIMESTAMP.
+
+## Order history rule
+
+Different order updates are preserved in order_status_history.
+In fact_orders, only the newest updated_at value is kept.

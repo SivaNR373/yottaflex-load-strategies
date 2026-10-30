@@ -9,4 +9,4 @@
 - **Phase 0:** I created the repo, virtual environment, folders and
   .gitignore myself, and checked the structure with `dir`.
 
-- **Phase 1:** Claude gave me the draft layout for the data dictionary, flow notes and assumptions. I read it, checked it against the brief, and kept it as my data model.
+- **Phase 1:** Used AI to review the data model and architecture documentation. I checked the suggestions against the challenge requirements and reviewed the final changes.
