@@ -9,7 +9,12 @@ Python + DuckDB + pytest. I'm strong in Python and SQL, and DuckDB runs locally 
 **My work:** I created the GitHub repo, virtual environment, folders and .gitignore myself, and checked the structure.
 
 ## Phase 1: Docs
-(add when done)
+**My work:** I decided the tables, keys and validation rules, and wrote the data dictionary, flow notes and assumptions.
+
+**Claude prompts:**
+- "phase 1"
+- "1.2" (I sent a screenshot because Notepad asked to create architecture.md)
+- "once again step 1.5 how to addd em"
 
 ## Phase 2: Generator
 (add when done)
