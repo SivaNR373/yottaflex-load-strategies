@@ -1,0 +1,12 @@
+{
+    "size": "small",
+    "seed": 42,
+    "valid_order_count": 201,
+    "customer_count": 30,
+    "status_update_count": 20,
+    "duplicate_event_count": 1,
+    "expected_reject_count": 8,
+    "empty_file_count": 1,
+    "extra_column_file_count": 1,
+    "malformed_row_count": 1
+}
