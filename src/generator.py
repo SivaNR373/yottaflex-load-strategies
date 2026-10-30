@@ -133,13 +133,13 @@ def generate_data(size, output_folder, seed):
             {"order_id": "", "customer_id": "CUST-0001",
              "order_date": "2026-10-25", "amount": "50.00",
              "status": "created", "updated_at": "2026-10-25T10:00:00"},
-            "missing_order_id"
+            "missing_required_field: order_id"
         ),
         (
             {"order_id": "BAD-NULL", "customer_id": "CUST-0001",
              "order_date": "2026-10-25", "amount": "",
              "status": "created", "updated_at": "2026-10-25T10:00:00"},
-            "missing_amount"
+            "missing_required_field: amount"
         ),
         (
             {"order_id": "BAD-TYPE", "customer_id": "CUST-0001",
@@ -151,7 +151,7 @@ def generate_data(size, output_folder, seed):
             {"order_id": "BAD-NEG", "customer_id": "CUST-0001",
              "order_date": "2026-10-25", "amount": "-50.00",
              "status": "created", "updated_at": "2026-10-25T10:00:00"},
-            "negative_amount"
+            "amount_must_be_positive"
         ),
         (
             {"order_id": "BAD-STATUS", "customer_id": "CUST-0001",
@@ -163,7 +163,7 @@ def generate_data(size, output_folder, seed):
             {"order_id": "BAD-FK", "customer_id": "CUST-999999",
              "order_date": "2026-10-25", "amount": "50.00",
              "status": "created", "updated_at": "2026-10-25T10:00:00"},
-            "orphan_customer"
+            "unknown_customer_id"
         ),
         (
             {"order_id": "BAD-DATE", "customer_id": "CUST-0001",
@@ -172,8 +172,6 @@ def generate_data(size, output_folder, seed):
             "future_order_date"
         )
     ]
-
- 
 
     daily_rows[0].extend([record for record, reason in bad_records])
 
@@ -202,11 +200,14 @@ def generate_data(size, output_folder, seed):
         else:
             write_csv(file_path, daily_rows[day_number], order_columns)
 
-    # Add a malformed CSV row with too many values.
+    # Add a genuinely malformed CSV row with too many values.
     first_file = output_folder / f"orders_{START_DATE.isoformat()}.csv"
 
     with open(first_file, "a", encoding="utf-8") as file:
-        file.write("BAD-MALFORMED,CUST-0001,2026-10-25,50,created,extra-value\n")
+        file.write(
+            "BAD-MALFORMED,CUST-0001,2026-10-25,50,"
+            "created,2026-10-25T10:00:00,EXTRA-VALUE\n"
+        )
 
     # Write expected final orders.
     expected_columns = order_columns
@@ -231,7 +232,7 @@ def generate_data(size, output_folder, seed):
 
     expected_rejects.append({
         "order_id": "BAD-MALFORMED",
-        "reject_reason": "malformed_csv_row"
+        "reject_reason": "malformed_row"
     })
 
     write_csv(

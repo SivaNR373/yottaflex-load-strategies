@@ -1,9 +1,9 @@
 order_id,reject_reason
-,missing_order_id
-BAD-NULL,missing_amount
+,missing_required_field: order_id
+BAD-NULL,missing_required_field: amount
 BAD-TYPE,invalid_amount_type
-BAD-NEG,negative_amount
+BAD-NEG,amount_must_be_positive
 BAD-STATUS,invalid_status
-BAD-FK,orphan_customer
+BAD-FK,unknown_customer_id
 BAD-DATE,future_order_date
-BAD-MALFORMED,malformed_csv_row
+BAD-MALFORMED,malformed_row

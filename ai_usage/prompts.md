@@ -16,11 +16,35 @@ Python + DuckDB + pytest. I'm strong in Python and SQL, and DuckDB runs locally 
 - "1.2" (I sent a screenshot because Notepad asked to create architecture.md)
 - "once again step 1.5 how to addd em"
 
-## Phase 2: Generator
-(add when done)
 
-## Phase 3: Validation and quarantine
-(add when done)
+## Phase 2 – Data Generator
+
+- Asked AI to resume the YottaFlex challenge from the previous progress.
+- Asked AI to continue Phase 2 while keeping implementation aligned with the problem statement and avoiding unnecessary complexity.
+- Asked AI for help creating and implementing the Python data generator.
+- Asked AI to debug the generator after a field-name error occurred.
+- Asked AI to verify small and large dataset generation.
+- Asked AI to verify Git tracking and prepare the Phase 2 commit.
+
+## Phase 3 – Validation and Quarantine
+
+- Asked AI to continue from Phase 2 and begin Phase 3.
+- Asked AI to inspect the existing project structure, dependencies, and sample CSV columns before implementation.
+- Asked AI to create a simple validation module based on the challenge requirements.
+- Asked AI for help recovering after accidentally entering Python code into PowerShell.
+- Asked AI to interpret validation results and explain the valid, rejected, and duplicate record counts.
+- Asked AI to verify the reject records and duplicate log.
+- Asked AI to ensure prompt history and AI usage documentation are maintained throughout the challenge.
+
+
+### Phase 3 – Validation Testing
+
+- Asked AI to create pytest tests for the data validation module.
+- Asked AI to cover required fields, data types, business rules, customer foreign keys and date validation.
+- Asked AI to test malformed CSV rows and duplicate handling.
+- Asked AI to help troubleshoot and verify test execution.
+- Asked AI to verify the complete pytest suite.
+
 
 ## Phase 4: Run log
 (add when done)
