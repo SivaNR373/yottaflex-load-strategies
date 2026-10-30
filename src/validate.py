@@ -25,8 +25,11 @@ VALID_STATUSES = {
 
 
 def load_customer_ids(file_path):
+    """Load valid customer IDs for foreign-key validation."""
+
     with open(file_path, "r", newline="", encoding="utf-8") as file:
         reader = csv.DictReader(file)
+
         return {
             row["customer_id"].strip()
             for row in reader
@@ -35,6 +38,9 @@ def load_customer_ids(file_path):
 
 
 def validate_record(row, customer_ids):
+    """Check whether an order record follows the business rules."""
+
+    # Required fields must be present before other checks can run.
     for column in REQUIRED_COLUMNS:
         if not row.get(column) or not row[column].strip():
             return f"missing_required_field: {column}"
@@ -69,7 +75,9 @@ def validate_record(row, customer_ids):
     return None
 
 
-def validate_dataset(input_folder, output_folder):
+def validate_dataset(input_folder, output_folder, order_files=None):
+    """Validate all daily files or only a selected group of files."""
+
     input_folder = Path(input_folder)
     output_folder = Path(output_folder)
     output_folder.mkdir(parents=True, exist_ok=True)
@@ -80,20 +88,29 @@ def validate_dataset(input_folder, output_folder):
     rejected_records = []
     duplicate_records = []
 
-    order_files = sorted(input_folder.glob("orders_*.csv"))
+    # Full Refresh reads every daily file. Incremental Merge can pass
+    # only the files that have not already been processed.
+    if order_files is None:
+        order_files = sorted(input_folder.glob("orders_*.csv"))
+    else:
+        order_files = sorted(Path(file_path) for file_path in order_files)
 
     for file_path in order_files:
         with open(file_path, "r", newline="", encoding="utf-8") as file:
             reader = csv.DictReader(file)
 
-            missing_columns = set(REQUIRED_COLUMNS) - set(reader.fieldnames or [])
+            missing_columns = set(REQUIRED_COLUMNS) - set(
+                reader.fieldnames or []
+            )
 
             if missing_columns:
                 raise ValueError(
                     f"{file_path.name} is missing columns: {missing_columns}"
                 )
 
-            extra_columns = set(reader.fieldnames or []) - set(REQUIRED_COLUMNS)
+            extra_columns = set(reader.fieldnames or []) - set(
+                REQUIRED_COLUMNS
+            )
 
             if extra_columns:
                 print(
@@ -104,6 +121,9 @@ def validate_dataset(input_folder, output_folder):
             file_orders = {}
 
             for row_number, row in enumerate(reader, start=2):
+
+                # DictReader stores extra values under the None key.
+                # These records cannot be safely loaded into our target schema.
                 if None in row:
                     reason = "malformed_row"
                 else:
@@ -125,12 +145,16 @@ def validate_dataset(input_folder, output_folder):
                 order_id = row["order_id"]
                 updated_at = datetime.fromisoformat(row["updated_at"])
 
+                # Keep only the latest version of an order within this file.
+                # If timestamps tie, the later row wins.
                 if order_id not in file_orders:
                     file_orders[order_id] = row
                     continue
 
                 existing = file_orders[order_id]
-                existing_time = datetime.fromisoformat(existing["updated_at"])
+                existing_time = datetime.fromisoformat(
+                    existing["updated_at"]
+                )
 
                 if updated_at >= existing_time:
                     dropped = existing
@@ -172,6 +196,8 @@ def validate_dataset(input_folder, output_folder):
 
 
 def write_csv(file_path, records, columns):
+    """Write validation results to a CSV file."""
+
     with open(file_path, "w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(file, fieldnames=columns)
         writer.writeheader()
@@ -180,6 +206,7 @@ def write_csv(file_path, records, columns):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+
     parser.add_argument("--input", default="data/sample")
     parser.add_argument("--output", default="output")
 
