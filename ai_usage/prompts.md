@@ -46,8 +46,17 @@ Python + DuckDB + pytest. I'm strong in Python and SQL, and DuckDB runs locally 
 - Asked AI to verify the complete pytest suite.
 
 
-## Phase 4: Run log
-(add when done)
+## Phase 4 — Run Log and Logging
+
+- Implemented DuckDB database connection and run_log table.
+- Added unique run IDs and pipeline execution tracking.
+- Implemented start_run() and finish_run() functions.
+- Recorded execution timestamps, strategy, input count,
+  output count, rejected count, status, and failure reason.
+- Configured Python logging to write to the console and log file.
+- Added pytest tests for table creation, successful runs,
+  failed runs, RUNNING status, and file logging.
+- Verified all 22 project tests pass.
 
 ## Phase 5: The 3 loaders
 (add when done)

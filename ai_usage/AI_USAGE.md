@@ -65,3 +65,13 @@ Candidate contribution:
 - Verified expected and actual rejected records matched.
 
 All AI-assisted code was reviewed and tested by the candidate.
+
+### Phase 4 — Run Logging and Observability
+
+AI assistance was used to develop the DuckDB run_log table,
+Python logging configuration, pipeline execution tracking
+functions, and automated tests.
+
+I created and integrated the implementation, executed the
+manual verification commands, reviewed the results, and
+confirmed that all 22 project tests passed.
