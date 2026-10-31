@@ -221,6 +221,32 @@ def make_fact_rows(records, run_id):
     ]
 
 
+def get_fact_rows_for_run(fact_rows, fail_after=None):
+    """Limit inserted rows when deliberately simulating a failure."""
+
+    if fail_after is None:
+        return fact_rows
+
+    if fail_after < 1:
+        raise ValueError("fail_after must be greater than zero")
+
+    if fail_after > len(fact_rows):
+        raise ValueError(
+            f"fail_after ({fail_after}) exceeds the number of fact rows "
+            f"available for this run ({len(fact_rows)})"
+        )
+
+    return fact_rows[:fail_after]
+
+
+def simulate_failure_after_insert(fact_rows, fail_after=None):
+    """Raise an error after the requested number of fact rows are inserted."""
+
+    if fail_after is not None and len(fact_rows) >= fail_after:
+        raise RuntimeError(
+            f"Simulated failure after inserting {fail_after} fact rows"
+        )
+
 def make_history_rows(records, run_id):
     """Convert validated records into rows for order_status_history."""
 
@@ -308,6 +334,7 @@ def swap_staging_tables(connection):
 def full_refresh(
     input_folder="data/raw",
     database_path="data/pipeline.duckdb",
+    fail_after=None,
 ):
     """Rebuild all target tables from every available daily source file."""
 
@@ -354,7 +381,9 @@ def full_refresh(
         history_rows = make_history_rows(history_records.values(), run_id)
         reject_rows = make_reject_rows(rejected_records, run_id)
 
-        if fact_rows:
+        rows_to_insert = get_fact_rows_for_run(fact_rows, fail_after)
+
+        if rows_to_insert:
             connection.executemany(
                 """
                 INSERT INTO fact_orders_staging
@@ -364,8 +393,10 @@ def full_refresh(
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                fact_rows,
+                rows_to_insert,
             )
+
+        simulate_failure_after_insert(rows_to_insert, fail_after)
 
         if history_rows:
             connection.executemany(
@@ -458,6 +489,7 @@ def full_refresh(
 def incremental_merge(
     input_folder="data/raw",
     database_path="data/pipeline.duckdb",
+    fail_after=None,
 ):
     """Process unprocessed files and merge newer order versions."""
 
@@ -529,7 +561,9 @@ def incremental_merge(
 
         fact_rows = make_fact_rows(valid_records, run_id)
 
-        if fact_rows:
+        rows_to_insert = get_fact_rows_for_run(fact_rows, fail_after)
+
+        if rows_to_insert:
             connection.executemany(
                 """
                 INSERT INTO fact_orders
@@ -548,8 +582,10 @@ def incremental_merge(
                     source_file = excluded.source_file
                 WHERE excluded.updated_at > fact_orders.updated_at
                 """,
-                fact_rows,
+                rows_to_insert,
             )
+
+        simulate_failure_after_insert(rows_to_insert, fail_after)
 
         reject_rows = make_reject_rows(rejected_records, run_id)
         insert_reject_rows(connection, reject_rows)
@@ -618,6 +654,7 @@ def incremental_merge(
 def partition_replace(
     input_folder="data/raw",
     database_path="data/pipeline.duckdb",
+    fail_after=None,
 ):
     """Rebuild only affected order-date partitions from complete source data."""
 
@@ -716,6 +753,7 @@ def partition_replace(
             )
         ]
 
+
         latest_orders, history_records = build_latest_orders(
             replacement_records
         )
@@ -755,7 +793,9 @@ def partition_replace(
                 delete_parameters,
             )
 
-        if fact_rows:
+        rows_to_insert = get_fact_rows_for_run(fact_rows, fail_after)
+
+        if rows_to_insert:
             connection.executemany(
                 """
                 INSERT INTO fact_orders
@@ -765,8 +805,10 @@ def partition_replace(
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                fact_rows,
+                rows_to_insert,
             )
+
+        simulate_failure_after_insert(rows_to_insert, fail_after)
 
         # History is append-only. Existing events remain, and only missing
         # order/timestamp combinations are inserted.
@@ -852,15 +894,37 @@ if __name__ == "__main__":
         help="Choose the loading strategy.",
     )
 
+    parser.add_argument(
+        "--database-path",
+        default="data/pipeline.duckdb",
+        help="Path to the DuckDB database file (default: data/pipeline.duckdb).",
+    )
+
+    parser.add_argument(
+        "--fail-after",
+        type=int,
+        default=None,
+        help="Simulate a failure after inserting this many fact rows; use a positive integer.",
+    )
+
     args = parser.parse_args()
 
     # Select a loader from the command line without editing this file.
     if args.strategy == "full_refresh":
-        result = full_refresh()
+        result = full_refresh(
+            database_path=args.database_path,
+            fail_after=args.fail_after,
+        )
     elif args.strategy == "incremental_merge":
-        result = incremental_merge()
+        result = incremental_merge(
+            database_path=args.database_path,
+            fail_after=args.fail_after,
+        )
     else:
-        result = partition_replace()
+        result = partition_replace(
+            database_path=args.database_path,
+            fail_after=args.fail_after,
+        )
 
     print("\nPipeline result")
     for key, value in result.items():

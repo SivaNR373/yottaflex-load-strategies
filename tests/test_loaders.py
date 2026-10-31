@@ -463,3 +463,315 @@ def test_incremental_merge_rolls_back_and_retries_after_failure(
 
     finally:
         connection.close()
+
+
+
+def test_full_refresh_rolls_back_and_retries_after_failure(
+    source_data,
+    database_path,
+    monkeypatch,
+):
+    from src import loaders
+
+    # First, create a valid production baseline.
+    initial_result = full_refresh(
+        input_folder=str(source_data),
+        database_path=database_path,
+    )
+
+    assert initial_result["status"] == "SUCCESS"
+
+    # Capture a production record before simulating the failure.
+    connection = duckdb.connect(database_path, read_only=True)
+
+    try:
+        baseline_order = connection.execute(
+            """
+            SELECT amount, status, updated_at
+            FROM fact_orders
+            WHERE order_id = ?
+            """,
+            ["ORD-000001"],
+        ).fetchone()
+    finally:
+        connection.close()
+
+    original_swap = loaders.swap_staging_tables
+
+    def swap_then_fail(connection):
+        # Complete the table swap, then simulate a failure before COMMIT.
+        original_swap(connection)
+        raise RuntimeError("Simulated failure after table swap")
+
+    # Inject the failure after the production tables have been swapped.
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            loaders,
+            "swap_staging_tables",
+            swap_then_fail,
+        )
+
+        with pytest.raises(
+            RuntimeError,
+            match="Simulated failure after table swap",
+        ):
+            full_refresh(
+                input_folder=str(source_data),
+                database_path=database_path,
+            )
+
+    # The failed transaction must restore the original production tables.
+    connection = duckdb.connect(database_path, read_only=True)
+
+    try:
+        current_order = connection.execute(
+            """
+            SELECT amount, status, updated_at
+            FROM fact_orders
+            WHERE order_id = ?
+            """,
+            ["ORD-000001"],
+        ).fetchone()
+
+        assert current_order == baseline_order
+
+        assert connection.execute(
+            "SELECT COUNT(*) FROM dim_customers"
+        ).fetchone()[0] == 30
+
+        assert connection.execute(
+            "SELECT COUNT(*) FROM fact_orders"
+        ).fetchone()[0] == 201
+
+        assert connection.execute(
+            "SELECT COUNT(*) FROM order_status_history"
+        ).fetchone()[0] == 215
+
+        assert connection.execute(
+            "SELECT COUNT(*) FROM rejects"
+        ).fetchone()[0] == 8
+
+        assert connection.execute(
+            "SELECT COUNT(*) FROM processed_files"
+        ).fetchone()[0] == 5
+
+        failed_run_count = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM run_log
+            WHERE strategy = 'full_refresh'
+              AND status = 'FAILED'
+              AND failure_reason LIKE '%Simulated failure after table swap%'
+            """
+        ).fetchone()[0]
+
+        assert failed_run_count == 1
+
+    finally:
+        connection.close()
+
+    # Retry the same full refresh. It should complete successfully.
+    retry_result = full_refresh(
+        input_folder=str(source_data),
+        database_path=database_path,
+    )
+
+    assert retry_result["status"] == "SUCCESS"
+    assert retry_result["output_count"] == 201
+
+    assert get_table_count(database_path, "fact_orders") == 201
+    assert get_table_count(database_path, "order_status_history") == 215
+    assert get_table_count(database_path, "rejects") == 8
+    assert get_table_count(database_path, "processed_files") == 5
+
+
+def test_partition_replace_rolls_back_and_retries_after_failure(
+    source_data,
+    database_path,
+    monkeypatch,
+):
+    from src import loaders
+
+    # Initialize the warehouse and register the original source files.
+    full_refresh(
+        input_folder=str(source_data),
+        database_path=database_path,
+    )
+
+    initial_result = partition_replace(
+        input_folder=str(source_data),
+        database_path=database_path,
+    )
+
+    assert initial_result["status"] == "SUCCESS"
+    assert initial_result["processed_files"] == 5
+
+    # Add a newer event for an existing order in an affected partition.
+    new_event = {
+        "order_id": "ORD-000001",
+        "customer_id": "CUST-0001",
+        "order_date": "2026-10-25",
+        "amount": "444.00",
+        "status": "shipped",
+        "updated_at": "2026-11-01T10:00:00",
+    }
+
+    new_file = source_data / "orders_2026-11-01.csv"
+
+    with open(new_file, "w", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(file, fieldnames=list(new_event.keys()))
+        writer.writeheader()
+        writer.writerow(new_event)
+
+    # Capture the existing production state before the failure.
+    connection = duckdb.connect(database_path, read_only=True)
+
+    try:
+        baseline_order = connection.execute(
+            """
+            SELECT amount, status, updated_at
+            FROM fact_orders
+            WHERE order_id = ?
+            """,
+            ["ORD-000001"],
+        ).fetchone()
+
+        baseline_fact_count = connection.execute(
+            "SELECT COUNT(*) FROM fact_orders"
+        ).fetchone()[0]
+
+        baseline_history_count = connection.execute(
+            "SELECT COUNT(*) FROM order_status_history"
+        ).fetchone()[0]
+
+        baseline_reject_count = connection.execute(
+            "SELECT COUNT(*) FROM rejects"
+        ).fetchone()[0]
+
+    finally:
+        connection.close()
+
+    original_insert_history_rows = loaders.insert_history_rows
+
+    def insert_history_then_fail(connection, history_rows):
+        # The fact partition has already been replaced at this point.
+        original_insert_history_rows(connection, history_rows)
+        raise RuntimeError("Simulated failure after partition replacement")
+
+    # Inject a failure inside the transaction after fact records are written.
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            loaders,
+            "insert_history_rows",
+            insert_history_then_fail,
+        )
+
+        with pytest.raises(
+            RuntimeError,
+            match="Simulated failure after partition replacement",
+        ):
+            partition_replace(
+                input_folder=str(source_data),
+                database_path=database_path,
+            )
+
+    # Verify that the failed transaction restored the original warehouse.
+    connection = duckdb.connect(database_path, read_only=True)
+
+    try:
+        current_order = connection.execute(
+            """
+            SELECT amount, status, updated_at
+            FROM fact_orders
+            WHERE order_id = ?
+            """,
+            ["ORD-000001"],
+        ).fetchone()
+
+        assert current_order == baseline_order
+
+        assert connection.execute(
+            "SELECT COUNT(*) FROM fact_orders"
+        ).fetchone()[0] == baseline_fact_count
+
+        assert connection.execute(
+            "SELECT COUNT(*) FROM order_status_history"
+        ).fetchone()[0] == baseline_history_count
+
+        assert connection.execute(
+            "SELECT COUNT(*) FROM rejects"
+        ).fetchone()[0] == baseline_reject_count
+
+        processed_file_count = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM processed_files_partition_replace
+            WHERE file_name = ?
+            """,
+            [new_file.name],
+        ).fetchone()[0]
+
+        assert processed_file_count == 0
+
+        failed_run_count = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM run_log
+            WHERE strategy = 'partition_replace'
+              AND status = 'FAILED'
+              AND failure_reason LIKE
+                  '%Simulated failure after partition replacement%'
+            """
+        ).fetchone()[0]
+
+        assert failed_run_count == 1
+
+    finally:
+        connection.close()
+
+    # Retry the same file. It should now be processed successfully.
+    retry_result = partition_replace(
+        input_folder=str(source_data),
+        database_path=database_path,
+    )
+
+    assert retry_result["status"] == "SUCCESS"
+    assert retry_result["processed_files"] == 1
+
+    connection = duckdb.connect(database_path, read_only=True)
+
+    try:
+        retried_order = connection.execute(
+            """
+            SELECT amount, status, updated_at
+            FROM fact_orders
+            WHERE order_id = ?
+            """,
+            ["ORD-000001"],
+        ).fetchone()
+
+        assert retried_order[0] == pytest.approx(444.00)
+        assert retried_order[1] == "shipped"
+        assert str(retried_order[2]) == "2026-11-01 10:00:00"
+
+        assert connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM processed_files_partition_replace
+            WHERE file_name = ?
+            """,
+            [new_file.name],
+        ).fetchone()[0] == 1
+
+        assert connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM order_status_history
+            WHERE order_id = ?
+              AND updated_at = ?
+            """,
+            ["ORD-000001", "2026-11-01 10:00:00"],
+        ).fetchone()[0] == 1
+
+    finally:
+        connection.close()

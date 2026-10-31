@@ -75,3 +75,9 @@ functions, and automated tests.
 I created and integrated the implementation, executed the
 manual verification commands, reviewed the results, and
 confirmed that all 22 project tests passed.
+
+## Phase 6 — Recovery and Failure Testing
+
+AI assistance was used to support implementation and debugging of failure simulation, isolated database testing, and recovery tests for the three loading strategies.
+
+All generated or suggested code was reviewed and executed locally. The final test suite and manual failure/retry scenarios were run by the project author.

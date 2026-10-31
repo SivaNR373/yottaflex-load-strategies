@@ -62,7 +62,12 @@ Python + DuckDB + pytest. I'm strong in Python and SQL, and DuckDB runs locally 
 (add when done)
 
 ## Phase 6: Idempotency and failure recovery
-(add when done)
+
+- Asked AI for help implementing simulated loader failures using `--fail-after`.
+- Asked AI for help adding `--database-path` for isolated recovery testing.
+- Asked AI for help adding tests for failure simulation and invalid inputs.
+- Used AI-assisted debugging to correct a syntax issue in the partition replacement record selection.
+- Reviewed, ran, and verified the resulting code locally.
 
 ## Phase 7: Tests
 (add when done)
