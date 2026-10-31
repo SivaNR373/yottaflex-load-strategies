@@ -1,82 +1,135 @@
-# Prompt History
+﻿# Prompt History
 
-Prompts I sent to AI tools while building this project. Responses left out (optional per the brief).
+This file records the prompts and requests I used while working on the YottaFlex AI Data Forward Deployed Engineer challenge.
 
-## Tech stack choice
-Python + DuckDB + pytest. I'm strong in Python and SQL, and DuckDB runs locally with no setup.
+I first used **Claude AI** to help understand the challenge and create a phased roadmap in Notion. I then followed that roadmap and worked through the implementation with **ChatGPT**.
 
-## Phase 0: Setup
-**My work:** I created the GitHub repo, virtual environment, folders and .gitignore myself, and checked the structure.
+The prompts below are a **reconstructed summary of my requests from the project workflow**, not a word-for-word export of every conversation. AI responses are not included.
 
-## Phase 1: Docs
-**My work:** Created the data dictionary, architecture flow and project assumptions. Used AI to review the documentation and suggest improvements.
+## Initial planning - Claude AI
 
-**Claude prompts:**
-- "phase 1"
-- "1.2" (I sent a screenshot because Notepad asked to create architecture.md)
-- "once again step 1.5 how to addd em"
+- "I received this YottaFlex AI data engineering challenge. Can you help me understand what they are expecting me to build?"
+- "I am still learning data engineering. Can you break this challenge into small phases so I can complete it within the 72-hour deadline?"
+- "Can you create a Notion roadmap for the project with each phase, tasks, and what I should complete before moving to the next phase?"
+- "I want to use Python and SQL. What would be a simple local setup for this project?"
+- "Can you explain the loading strategies in the challenge in simple terms and what I need to demonstrate for each one?"
+- "Can you help me organize the project so I can track my progress phase by phase?"
 
+## Phase 0 - Project setup
 
-## Phase 2 – Data Generator
+- "Let's start the YottaFlex project. Help me create the GitHub repository and set up the folders."
+- "How do I create and activate a Python virtual environment in Windows?"
+- "What should I put in my `.gitignore` for this project?"
+- "Can you help me check whether my project structure is correct?"
 
-- Asked AI to resume the YottaFlex challenge from the previous progress.
-- Asked AI to continue Phase 2 while keeping implementation aligned with the problem statement and avoiding unnecessary complexity.
-- Asked AI for help creating and implementing the Python data generator.
-- Asked AI to debug the generator after a field-name error occurred.
-- Asked AI to verify small and large dataset generation.
-- Asked AI to verify Git tracking and prepare the Phase 2 commit.
+## Phase 1 - Understanding the problem and documentation
 
-## Phase 3 – Validation and Quarantine
+- "Let's start Phase 1 from our roadmap."
+- "Help me understand the data we need and the rules the challenge expects us to follow."
+- "Can you help me create a data dictionary for the customers and orders data?"
+- "Can you help me document the assumptions I am making for this project?"
+- "How should I show the flow from CSV files to validation, loading, and reconciliation?"
+- "Please review my documentation and tell me if anything important is missing."
 
-- Asked AI to continue from Phase 2 and begin Phase 3.
-- Asked AI to inspect the existing project structure, dependencies, and sample CSV columns before implementation.
-- Asked AI to create a simple validation module based on the challenge requirements.
-- Asked AI for help recovering after accidentally entering Python code into PowerShell.
-- Asked AI to interpret validation results and explain the valid, rejected, and duplicate record counts.
-- Asked AI to verify the reject records and duplicate log.
-- Asked AI to ensure prompt history and AI usage documentation are maintained throughout the challenge.
+## Phase 2 - Data generator
 
+- "Let's continue with Phase 2. I want to generate sample customer and order data for testing."
+- "Can you help me write a Python generator that creates customers.csv and daily order CSV files?"
+- "I need both a small dataset and a large dataset so I can test the loading strategies."
+- "Can we make the generated data repeatable using a fixed seed?"
+- "Please include some bad records and edge cases so I can test validation properly."
+- "Can you help me fix this error in the generator?"
+- "Help me check whether the generated files and expected results look correct."
+- "Can you help me check what should be committed to Git?"
 
-### Phase 3 – Validation Testing
+## Phase 3 - Validation and quarantine
 
-- Asked AI to create pytest tests for the data validation module.
-- Asked AI to cover required fields, data types, business rules, customer foreign keys and date validation.
-- Asked AI to test malformed CSV rows and duplicate handling.
-- Asked AI to help troubleshoot and verify test execution.
-- Asked AI to verify the complete pytest suite.
+- "Let's move to Phase 3. Help me validate the incoming order data before loading it."
+- "Can you check the CSV columns and existing project files before we start?"
+- "I want to reject bad records and keep a reason for why each record was rejected."
+- "Can you help me check required fields, invalid amounts, dates, customer IDs, and order statuses?"
+- "How should we handle duplicate orders and order updates?"
+- "Can you help me write tests for the validation rules?"
+- "I accidentally entered Python code in PowerShell. Help me recover and continue."
+- "Can you help me understand the valid records, rejected records, and duplicate results?"
+- "Please check whether the validation results match what we expected."
 
+## Phase 4 - Run logging and observability
 
-## Phase 4 — Run Log and Logging
+- "Let's continue with Phase 4. I want to track every pipeline run."
+- "Can you help me create a run_log table in DuckDB?"
+- "I want to record the run ID, loading strategy, start and end time, status, input count, output count, and errors."
+- "Can you help me add logging so I can see what the pipeline is doing?"
+- "Please help me test successful runs and failed runs."
+- "Can you help me check whether all the tests are passing?"
 
-- Implemented DuckDB database connection and run_log table.
-- Added unique run IDs and pipeline execution tracking.
-- Implemented start_run() and finish_run() functions.
-- Recorded execution timestamps, strategy, input count,
-  output count, rejected count, status, and failure reason.
-- Configured Python logging to write to the console and log file.
-- Added pytest tests for table creation, successful runs,
-  failed runs, RUNNING status, and file logging.
-- Verified all 22 project tests pass.
+## Phase 5 - The three loading strategies
 
-## Phase 5: The 3 loaders
-(add when done)
+- "Let's start Phase 5. I need to implement the three loading strategies from the challenge."
+- "Can you help me build the Full Refresh loader first?"
+- "Now help me implement Incremental Merge. I want existing orders to update only when the incoming update is newer."
+- "Can you help me implement Partition Replacement?"
+- "Please explain how each strategy should handle processed files, rejects, and order history."
+- "Can you help me make the loading steps safe using transactions?"
+- "Please review the loaders and help me test them."
+- "How can I check that all three strategies produce the same business data?"
 
-## Phase 6: Idempotency and failure recovery
+## Phase 6 - Idempotency and failure recovery
 
-- Asked AI for help implementing simulated loader failures using `--fail-after`.
-- Asked AI for help adding `--database-path` for isolated recovery testing.
-- Asked AI for help adding tests for failure simulation and invalid inputs.
-- Used AI-assisted debugging to correct a syntax issue in the partition replacement record selection.
-- Reviewed, ran, and verified the resulting code locally.
+- "Let's move to Phase 6. I need to prove that rerunning the pipeline does not create duplicate data."
+- "Can you help me add a way to simulate a failure after processing a certain number of files?"
+- "I want to use a separate database when testing failures so I don't damage my main data."
+- "Can you help me test what happens when a loader fails halfway through?"
+- "How should I rerun the pipeline after a failure?"
+- "Can you help me write tests for failure and recovery?"
+- "I got an error in the Partition Replacement code. Can you help me find and fix it?"
+- "Please help me verify that the recovery tests work for all three strategies."
 
-## Phase 7: Tests
-(add when done)
+## Phase 7 - Edge cases and final test coverage
 
-## Phase 8: Reconcile and benchmark
-(add when done)
+- "Let's continue with Phase 7. What important edge cases should I test before finishing?"
+- "Can you help me test what happens when there are no input files or an empty file?"
+- "I want to check that rerunning a strategy is safe."
+- "Can you help me compare the business data produced by all three strategies?"
+- "Please help me add tests for these cases without making the code unnecessarily complicated."
+- "Can you help me run the complete test suite and understand any failures?"
+- "Please help me verify the final test count."
 
-## Phase 9: Docs and trade-offs
-(add when done)
+## Phase 8 - Reconciliation and benchmarking
 
-## Phase 10: Final checks
-(add when done)
+- "Let's start Phase 8. I need to compare the results from the three loading strategies."
+- "Can you help me build a reconciliation script that checks whether the business data matches?"
+- "I want to compare row counts, totals, order history, and data hashes."
+- "Can you help me create a benchmark script for the small and large datasets?"
+- "Please help me measure the runtime and record the results."
+- "The large Incremental Merge benchmark is taking too long. Help me understand what happened and how to report it honestly."
+- "Can you help me check the reconciliation results and explain any differences?"
+- "Please help me document which benchmarks completed and which ones did not."
+
+## Phase 9 - README and documentation
+
+- "Let's move to Phase 9. Help me finish the README so another person can run this project."
+- "Can you include the setup steps, commands, loading strategies, and recovery instructions?"
+- "Please explain the trade-offs between Full Refresh, Incremental Merge, and Partition Replacement in simple terms."
+- "Can you help me document the benchmark results and limitations?"
+- "Please review the README against the actual project files and commands."
+- "Can you help me complete the AI usage disclosure and prompt history?"
+- "Please check for unfinished sections and formatting issues."
+
+## Phase 10 - Final checks and submission preparation
+
+- "Let's finish the final phase. Help me check that the documentation and project files are ready."
+- "Can you help me check the AI disclosure files?"
+- "Please help me find unfinished placeholders in the prompt history."
+- "Can you help me clean up whitespace issues in the documentation?"
+- "Help me run the final tests and review the Git changes before committing."
+- "Please guide me through checking that the repository is up to date before I submit it."
+
+## AI tools used
+
+- **Claude AI:** Used during initial challenge understanding and Notion roadmap planning.
+- **ChatGPT:** Used while following the roadmap for implementation guidance, explanations, debugging, test development, result interpretation, and documentation.
+
+## Candidate responsibility
+
+I reviewed the suggested implementation, ran the project locally, checked test and reconciliation results, and documented incomplete benchmarks and limitations. I am responsible for understanding and explaining the final code and design decisions.

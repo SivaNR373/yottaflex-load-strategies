@@ -1,83 +1,79 @@
-# AI Usage Disclosure
+﻿# AI Usage Disclosure
 
 **Author:** Siva (Adaka Sivanagaraju)
 **Build start:** Fri 30 Oct 2026
 
-## 4. What I did, changed and validated myself
-(updated after each phase)
+## 1. How AI was used
 
-- **Phase 0:** I created the repo, virtual environment, folders and
-  .gitignore myself, and checked the structure with `dir`.
+I used AI assistants as development support during this individual project. AI helped me understand requirements, review designs, draft code and tests, troubleshoot errors, and interpret test and benchmark results.
 
-- **Phase 1:** Used AI to review the data model and architecture documentation. I checked the suggestions against the challenge requirements and reviewed the final changes.
+I remained responsible for choosing the project approach, running the code locally, reviewing the implementation, checking results, and deciding what to include in the repository.
 
+## 2. What I personally did and validated
 
-## Phase 2 – Data Generator
+### Phase 0 - Setup
+I created the GitHub repository, virtual environment, project folders, and `.gitignore`, then checked the project structure.
 
-AI assistance was used to help design and implement the Python data generator.
+### Phase 1 - Documentation and design
+I created the data dictionary, architecture flow, and project assumptions. I used AI to review the documentation and suggest improvements, then checked the changes against the challenge requirements.
 
-AI helped with:
-- Structuring the generator.
-- Creating reproducible small and large datasets.
-- Adding invalid records and edge cases.
-- Debugging a CSV field-name error.
-- Reviewing generated files and Git staging.
+### Phase 2 - Data generator
+AI helped me structure the Python generator, create reproducible small and large datasets, add invalid records and edge cases, and troubleshoot a CSV field-name error.
 
-My involvement:
-- Created and ran the generator locally.
-- Fixed the reported error.
-- Executed both small and large dataset generation.
-- Checked the generated CSV files and expected results.
-- Reviewed Git changes and committed the completed work.
+I ran the generator locally for both dataset sizes, checked the generated CSV files and expected results, reviewed the Git changes, and committed the completed work.
 
-## Phase 3 – Validation and Quarantine
+### Phase 3 - Validation and quarantine
+AI helped draft the validation module and pytest cases for required fields, data types, business rules, customer foreign keys, date validation, malformed CSV rows, and duplicate handling.
 
-AI assistance was used to draft the initial validation module.
+I created and integrated the files, ran the validation and tests locally, reviewed the reject and duplicate results, and confirmed that the initial validation test suite passed all 17 tests.
 
-AI helped with:
-- Required-field validation.
-- Data type and business-rule checks.
-- Customer foreign-key validation.
-- Duplicate handling.
-- Reject logging with source filename and row number.
+### Phase 4 - Run logging and observability
+AI helped develop the DuckDB `run_log` table, run tracking functions, Python logging configuration, and related tests.
 
-My involvement:
-- Created the Python file.
-- Ran the validation module locally.
-- Reviewed the generated reject and duplicate logs.
-- Will verify and test the implementation before considering this phase complete.
+I integrated the implementation, ran manual verification, reviewed the results, and confirmed that all 22 project tests passed.
 
-All AI-generated code will be reviewed, understood, tested, and corrected by me before submission.
+### Phase 5 - Loading strategies
+AI helped me implement and debug the three loading strategies:
 
+- Full Refresh
+- Incremental Merge
+- Partition Replacement
 
-### Phase 3 – Validation Testing
+I reviewed how each strategy handles target data, processed-file tracking, order updates, history, rejects, and transactions. I ran the loaders and tests locally and checked that the strategies produced equivalent business data in reconciliation tests.
 
-AI assistance:
-- Helped create pytest test cases for the validation module.
-- Suggested parameterized tests for required fields and invalid amounts.
-- Helped test malformed CSV handling and duplicate selection.
-- Assisted with interpreting pytest results and verifying the complete test suite.
+### Phase 6 - Idempotency and failure recovery
+AI helped implement simulated loader failures using `--fail-after`, isolated database testing using `--database-path`, and recovery tests. AI-assisted debugging helped correct a syntax issue in partition replacement record selection.
 
-Candidate contribution:
-- Created the test file and integrated the tests into the project.
-- Executed the tests locally.
-- Reviewed the test results and confirmed all 17 tests passed.
-- Verified expected and actual rejected records matched.
+I reviewed and ran the implementation locally, including failure and retry scenarios, and confirmed that the test suite passed.
 
-All AI-assisted code was reviewed and tested by the candidate.
+### Phase 7 - Edge-case testing
+AI helped identify and implement additional edge-case tests, including empty input handling, rerun behavior, and equivalence checks across strategies.
 
-### Phase 4 — Run Logging and Observability
+I ran the tests locally, reviewed the results, and confirmed that all 34 project tests passed.
 
-AI assistance was used to develop the DuckDB run_log table,
-Python logging configuration, pipeline execution tracking
-functions, and automated tests.
+### Phase 8 - Reconciliation and benchmarking
+AI helped develop the reconciliation and benchmark tools and interpret their results.
 
-I created and integrated the implementation, executed the
-manual verification commands, reviewed the results, and
-confirmed that all 22 project tests passed.
+I ran reconciliation against isolated databases and checked business row counts, totals, history counts, and hashes. I also ran the small benchmark and the large Full Refresh benchmark.
 
-## Phase 6 — Recovery and Failure Testing
+The large Incremental Merge benchmark did not finish within the available time, and the large Partition Replacement benchmark was not run. I documented these limitations rather than presenting incomplete results as successful benchmarks.
 
-AI assistance was used to support implementation and debugging of failure simulation, isolated database testing, and recovery tests for the three loading strategies.
+### Phase 9 - Documentation
+AI helped draft and improve the README, including setup instructions, loading strategy explanations, recovery commands, reconciliation, benchmark findings, and known limitations.
 
-All generated or suggested code was reviewed and executed locally. The final test suite and manual failure/retry scenarios were run by the project author.
+I reviewed the documentation against the repository and challenge requirements.
+
+### Phase 10 - Final checks
+I will run the final test suite, check the Git diff, review the staged changes, and verify that the public repository contains the intended submission files before completing the submission.
+
+## 3. What I reviewed and learned
+
+I reviewed the core loading logic, validation rules, transaction boundaries, processed-file tracking, failure recovery behavior, and tests. I also reviewed the trade-offs between full refresh, incremental merge, and partition replacement.
+
+I am responsible for explaining the implementation, assumptions, limitations, and test results during a project walkthrough.
+
+## 4. Limitations and transparency
+
+AI assistance was used throughout development. I did not treat AI-generated code or explanations as verified merely because they were produced. I ran the project locally and used tests, manual checks, reconciliation, and benchmark results to evaluate the implementation.
+
+The benchmark results have limitations: the large Incremental Merge run was interrupted, and the large Partition Replacement benchmark was not completed. These limitations are documented in the project README.
