@@ -363,6 +363,12 @@ def full_refresh(
 
         all_files = sorted(input_folder.glob("orders_*.csv"))
 
+        if not all_files:
+            raise ValueError(
+                f"No order files found in input folder: {input_folder}"
+            )
+    
+
         connection.execute("BEGIN TRANSACTION")
         transaction_started = True
 

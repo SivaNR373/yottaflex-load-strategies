@@ -775,3 +775,184 @@ def test_partition_replace_rolls_back_and_retries_after_failure(
 
     finally:
         connection.close()
+
+def test_full_refresh_with_no_order_files_preserves_existing_data(
+    source_data,
+    database_path,
+):
+    # Load valid data first.
+    first_result = full_refresh(
+        input_folder=str(source_data),
+        database_path=database_path,
+    )
+
+    assert first_result["status"] == "SUCCESS"
+    assert get_table_count(database_path, "fact_orders") == 201
+
+    # Create a folder containing customers.csv but no daily order files.
+    empty_folder = source_data.parent / "empty_raw"
+    empty_folder.mkdir()
+
+    customers_file = source_data / "customers.csv"
+    (empty_folder / "customers.csv").write_bytes(
+        customers_file.read_bytes()
+    )
+
+    # An empty full refresh should fail safely.
+    with pytest.raises(ValueError, match="No order files found"):
+        full_refresh(
+            input_folder=str(empty_folder),
+            database_path=database_path,
+        )
+
+    # Existing warehouse data must remain unchanged.
+    assert get_table_count(database_path, "fact_orders") == 201
+
+def test_all_loading_strategies_produce_equivalent_business_data(
+    source_data,
+    tmp_path,
+):
+    strategies = {
+        "full_refresh": full_refresh,
+        "incremental_merge": incremental_merge,
+        "partition_replace": partition_replace,
+    }
+
+    business_columns = {
+        "dim_customers": [
+            "customer_id",
+            "customer_name",
+            "country",
+            "created_at",
+        ],
+        "fact_orders": [
+            "order_id",
+            "customer_id",
+            "order_date",
+            "amount",
+            "status",
+            "updated_at",
+        ],
+        "order_status_history": [
+            "order_id",
+            "status",
+            "updated_at",
+        ],
+    }
+
+    results = {}
+
+    for strategy_name, loader in strategies.items():
+        database_path = tmp_path / f"{strategy_name}.duckdb"
+
+        # Initialize the database schema and customer dimension.
+        full_refresh(
+            input_folder=source_data,
+            database_path=database_path,
+        )
+
+        # Run the selected strategy against the same source dataset.
+        if strategy_name != "full_refresh":
+            loader(
+                input_folder=source_data,
+                database_path=database_path,
+            )
+
+        connection = duckdb.connect(str(database_path), read_only=True)
+
+        results[strategy_name] = {}
+
+        for table_name, columns in business_columns.items():
+            selected_columns = ", ".join(columns)
+
+            rows = connection.execute(
+                f"""
+                SELECT {selected_columns}
+                FROM {table_name}
+                ORDER BY ALL
+                """
+            ).fetchall()
+
+            results[strategy_name][table_name] = rows
+
+        connection.close()
+
+    # Compare business data, excluding run-specific metadata.
+    full_refresh_results = results["full_refresh"]
+
+    for strategy_name in ["incremental_merge", "partition_replace"]:
+        for table_name in business_columns:
+            assert (
+                full_refresh_results[table_name]
+                == results[strategy_name][table_name]
+            ), (
+                f"{strategy_name} produced different business data "
+                f"for table {table_name}"
+            )
+    strategies = {
+        "full_refresh": full_refresh,
+        "incremental_merge": incremental_merge,
+        "partition_replace": partition_replace,
+    }
+
+    business_tables = [
+        "dim_customers",
+        "fact_orders",
+        "order_status_history",
+    ]
+
+    results = {}
+
+    # Run each strategy and collect its results.
+    for strategy_name, loader in strategies.items():
+        database_path = str(tmp_path / f"{strategy_name}.duckdb")
+
+        # Full Refresh initializes the warehouse tables.
+        full_refresh(
+            input_folder=str(source_data),
+            database_path=database_path,
+        )
+
+        # Run the selected strategy for incremental and partition tests.
+        if strategy_name != "full_refresh":
+            loader(
+                input_folder=str(source_data),
+                database_path=database_path,
+            )
+
+        connection = duckdb.connect(database_path, read_only=True)
+
+        try:
+            strategy_results = {}
+
+            for table_name in business_tables:
+                rows = connection.execute(
+                    f"SELECT * FROM {table_name} ORDER BY ALL"
+                ).fetchall()
+
+                strategy_results[table_name] = rows
+
+            results[strategy_name] = strategy_results
+
+        finally:
+            connection.close()
+
+    # Compare results only after all three strategies have finished.
+        # Compare business data while excluding execution-specific metadata.
+    comparison_columns = {
+        "dim_customers": [
+            "customer_id",
+            # Add the remaining business columns from dim_customers here.
+        ],
+        "fact_orders": [
+            "order_id",
+            "customer_id",
+            "order_date",
+            "amount",
+            "status",
+            "updated_at",
+        ],
+        "order_status_history": [
+            # We'll inspect this table's schema before defining its columns.
+        ],
+    }
